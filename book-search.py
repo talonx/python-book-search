@@ -52,31 +52,46 @@ class AmazonSearch(object):
         self.title = title.replace(" ", "+")
 
     def get_results(self):
+        print self.title
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Linux; U; Android 4.0.3; ko-kr; LG-L160L Build/IML74K) AppleWebkit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30'
+            'User-Agent': 'Mozilla/5.0 (compatible; MSIE 9.0; Windows Phone OS 7.5; Trident/5.0; IEMobile/9.0)'
         }
-        res = requests.get("http://www.amazon.in/gp/aw/s/ref=is_box_?k=" + self.title, headers=headers)
+        res = requests.get("http://www.amazon.in/gp/aw/s/ref=is_box_?x=0&y=0&k=" + self.title, headers=headers)
         tree = html.fromstring(res.text)
-        # print res.text
-        # numprod = tree.xpath("/html/body/div/div/div/div[2]/div[1]/header/h2/span/span[2]/span[2]/text()")[0]
-        # print numprod
-        # if int(numprod) == 1:
-        #     print "Single match"
-        #     prodinfo = tree.xpath("/html/body/div/div/div/div[2]/div[1]/ul/li[1]/section/a/div[2]")
-        #     title = prodinfo[0].xpath("span[1]/text()")
-        #     subtitle = prodinfo[0].xpath("span[2]/text()")
-        #     price = prodinfo[0].xpath("span[4]/text()")
-        #     print price
-        prodinfo = tree.xpath("/html/body/div[1]/div[1]")
-        print prodinfo
-        title = prodinfo.xpath("a/div/div[2]/h5/text()")
+        prodinfo = tree.xpath("/html/body/div[6]/div/div[1]")
+        prodinfo = prodinfo[0]
+        print "Prod", prodinfo
+        title = prodinfo.xpath("/html/body/div[6]/div/div[1]/a/table/tbody/tr/td[2]/span[1]/a/text()")
         print title
-        subtitle = prodinfo.xpath("a/div/div[2]/div[1]/span")
+        subtitle = prodinfo.xpath("a/table/tbody/tr/td[2]/span[2]/text()")
         print subtitle
-        price = prodinfo.xpath("a/div/div[2]/div[3]/div/span")
+        price = prodinfo.xpath("a/table/tbody/tr/td[2]/span[3]/span/text()")
         print price
         result = Book(title[0], subtitle[0], price[0][3:])  # price comes as Rs.234, strip off Rs.
         return result
+
+class InfibeamSearch(object):
+    def __init__(self, title):
+        self.title = title.replace(" ", "+")
+
+    def get_results(self):
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (compatible; MSIE 9.0; Windows Phone OS 7.5; Trident/5.0; IEMobile/9.0)'
+        }
+        res = requests.get("http://www.infibeam.com/Books/search?q=" + self.title, headers=headers)
+        tree = html.fromstring(res.text)
+        prodinfo = tree.xpath("/html/body/div[1]/div/div/div[2]/div/div[1]/div[1]/div[2]")
+        prodinfo = prodinfo[0]
+        title = prodinfo.xpath("div/div[1]/div[1]/div[2]/a/div/text()")[0].replace("\n", "")
+        authors = prodinfo.xpath("div/div[1]/div[1]/div[2]/div[2]/a")
+        auths = ""
+        for a in authors:
+            auths += a.xpath("text()")[0].encode("utf-8")
+            auths += ", "
+        price = prodinfo.xpath("div/div[2]/div[1]/span/text()")[0].replace(",", "")
+        result = Book(title, auths, price)  # price comes as Rs.234, strip off Rs.
+        return result
+
 
 def main():
     # parser = argparse.ArgumentParser()
@@ -85,8 +100,8 @@ def main():
     # title = args.title
     title = "Refactoring"
     title = "Collected Papers David Parnas"
-    search = AmazonSearch(title)
-    search.get_results()
+    search = InfibeamSearch(title)
+    print "Finally", search.get_results()
     # $REVIEW$ use threads for multiple sites?
 
 if __name__ == '__main__':
